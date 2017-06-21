@@ -24,6 +24,11 @@ tmx_map* parse_xml_buffer(const char *buffer, int len);
 tmx_map* parse_xml_fd(int fd);
 tmx_map* parse_xml_callback(tmx_read_functor callback, void *userdata);
 
+tmx_tileset* parse_tsx_xml(const char *filename);
+tmx_tileset* parse_tsx_xml_buffer(const char *buffer, int len);
+tmx_tileset* parse_tsx_xml_fd(int fd);
+tmx_tileset* parse_tsx_xml_callback(tmx_read_functor callback, void *userdata);
+
 /*
 	Node allocation
 */
@@ -34,8 +39,21 @@ tmx_object_group* alloc_objgr(void);
 tmx_layer*        alloc_layer(void);
 tmx_tile*         alloc_tiles(int count);
 tmx_tileset*      alloc_tileset(void);
+tmx_tileset_list* alloc_tileset_list(void);
 tmx_map*          alloc_map(void);
 tmx_tile*         alloc_tile(void);
+
+/*
+	Node free
+*/
+void free_props(tmx_properties *h);
+void free_obj(tmx_object *o);
+void free_objgr(tmx_object_group *o);
+void free_image(tmx_image *i);
+void free_layers(tmx_layer *l);
+void free_tiles(tmx_tile *t, int tilecount);
+void free_ts(tmx_tileset *ts);
+void free_ts_list(tmx_tileset_list *tsl);
 
 /*
 	Misc
@@ -76,6 +94,7 @@ void  hashtable_foreach(void *hashtable, hashtable_foreach_functor functor, void
 void  free_hashtable(void *hashtable, hashtable_entry_deallocator deallocator);
 
 void property_deallocator(void *val, const char *key);
+void tileset_deallocator(void *val, const char *key);
 
 /*
 	Error handling

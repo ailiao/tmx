@@ -186,29 +186,32 @@ void dump_tile(tmx_tile *t, unsigned int tilecount) {
 	}
 }
 
-void dump_tileset(tmx_tileset *t) {
-	printf("\ntileset={");
-	if (t) {
-		printf("\n\t" "name=%s", t->name);
-		printf("\n\t" "tilecount=%u", t->tilecount);
-		printf("\n\t" "firstgid=%u", t->firstgid);
-		printf("\n\t" "tile_height=%u", t->tile_height);
-		printf("\n\t" "tile_width=%u", t->tile_width);
-		printf("\n\t" "firstgid=%u", t->firstgid);
-		printf("\n\t" "margin=%u", t->margin);
-		printf("\n\t" "spacing=%u", t->spacing);
-		printf("\n\t" "x_offset=%d", t->x_offset);
-		printf("\n\t" "y_offset=%d", t->y_offset);
-		dump_image(t->image, 1);
-		dump_tile(t->tiles, t->tilecount);
-		dump_prop(t->properties, 1);
-		printf("\n}");
-	} else {
-		printf(" (NULL) }");
-	}
+void dump_tileset(tmx_tileset_list *tsl) {
+	if (tsl) {
+		tmx_tileset *t = tsl->tileset;
+		printf("\ntileset={");
+		if (t) {
+			printf("\n\t" "name=%s", t->name);
+			printf("\n\t" "tilecount=%u", t->tilecount);
+			printf("\n\t" "firstgid=%u", t->firstgid);
+			printf("\n\t" "tile_height=%u", t->tile_height);
+			printf("\n\t" "tile_width=%u", t->tile_width);
+			printf("\n\t" "firstgid=%u", t->firstgid);
+			printf("\n\t" "margin=%u", t->margin);
+			printf("\n\t" "spacing=%u", t->spacing);
+			printf("\n\t" "x_offset=%d", t->x_offset);
+			printf("\n\t" "y_offset=%d", t->y_offset);
+			dump_image(t->image, 1);
+			dump_tile(t->tiles, t->tilecount);
+			dump_prop(t->properties, 1);
+			printf("\n}");
+		} else {
+			printf(" (NULL) }");
+		}
 
-	if (t && t->next) {
-		dump_tileset(t->next);
+		if (tsl->next) {
+			dump_tileset(tsl->next);
+		}
 	}
 }
 

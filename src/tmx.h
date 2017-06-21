@@ -61,6 +61,7 @@ typedef struct _tmx_img tmx_image;
 typedef struct _tmx_frame tmx_anim_frame;
 typedef struct _tmx_tile tmx_tile;
 typedef struct _tmx_ts tmx_tileset;
+typedef struct _tmx_ts_list tmx_tileset_list;
 typedef struct _tmx_obj tmx_object;
 typedef struct _tmx_objgr tmx_object_group;
 typedef struct _tmx_layer tmx_layer;
@@ -118,6 +119,7 @@ struct _tmx_tile { /* <tile> */
 };
 
 struct _tmx_ts { /* <tileset> and <tileoffset> */
+    int is_embedded; /* used internally to free this node */
 	unsigned int firstgid;
 	char *name;
 
@@ -131,7 +133,11 @@ struct _tmx_ts { /* <tileset> and <tileoffset> */
 	tmx_user_data user_data;
 	tmx_properties *properties;
 	tmx_tile *tiles;
-	tmx_tileset *next;
+};
+
+struct _tmx_ts_list { /* Linked list */
+    tmx_tileset *tileset;
+	tmx_tileset_list *next;
 };
 
 struct _tmx_obj { /* <object> */
@@ -192,7 +198,7 @@ struct _tmx_map { /* <map> (Head of the data structure) */
 	enum tmx_map_renderorder renderorder;
 
 	tmx_properties *properties;
-	tmx_tileset *ts_head;
+	tmx_tileset_list *ts_head;
 	tmx_layer *ly_head;
 
 	unsigned int tilecount; /* length of map->tiles */
@@ -207,7 +213,7 @@ struct _tmx_map { /* <map> (Head of the data structure) */
 
 /* Loads a map from file at `path` and returns the head of the data structure
    returns NULL if an error occurred and set tmx_errno */
-TMXEXPORT tmx_map *tmx_load(const char *path);
+TMXEXPORT tmx_map* tmx_load(const char *path);
 
 /* Loads a map from file at `path` and returns the head of the data structure
    returns NULL if an error occurred and set tmx_errno */

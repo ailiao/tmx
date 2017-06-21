@@ -1,0 +1,57 @@
+/*
+	TSX.H - TSX C LOADER
+	Copyright (c) 2017, Bayle Jonathan <baylej@github>
+
+	Functions to load tileset (.tsx) files in a tileset manager
+
+	Optionnal functionality
+*/
+
+#pragma once
+
+#ifndef TSX_H
+#define TSX_H
+
+#include "tmx.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Tileset Manager type (private hashtable) */
+typedef void tmx_tileset_manager;
+
+/* Creates a Tileset Manager that holds a hashtable of loaded tilesets
+   Only external tilesets (in .TSX files) are indexed in a tileset manager
+   This is particulary useful to only load once tilesets needed by many maps
+   The key is the `source` attribute of a tileset element */
+TMXEXPORT tmx_tileset_manager* tmx_make_tileset_manager();
+
+/* Frees the tilesetManager and all its loaded Tilesets
+   All maps holding a pointer to external tileset loaded by the given manager
+   now hold a pointer to freed memory */
+TMXEXPORT void tmx_free_tileset_manager(tmx_tileset_manager *ts_mgr);
+
+/* Loads a tileset from file at `path` and stores it into given tileset manager
+   `path` will be used as the key
+   Returns 1 on success */
+TMXEXPORT int tmx_load_tileset(const char *path, tmx_tileset_manager *ts_mgr);
+
+/* Loads a tileset from a buffer and stores it into given tileset manager
+   Returns 1 on success */
+TMXEXPORT int tmx_load_tileset_buffer(const char *buffer, int len, const char *key, tmx_tileset_manager *ts_mgr);
+
+/* Loads a tileset from a file descriptor and stores it into given tileset manager
+   The file descriptor will not be closed
+   Returns 1 on success */
+TMXEXPORT int tmx_load_tileset_fd(int fd, const char *key, tmx_tileset_manager *ts_mgr);
+
+/* Loads a tileset using the given read callback and stores it into given tileset manager
+   Returns 1 on success */
+TMXEXPORT int tmx_load_tileset_callback(tmx_read_functor callback, void *userdata, const char *key, tmx_tileset_manager *ts_mgr);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* TSX_H */

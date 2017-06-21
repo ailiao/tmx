@@ -298,11 +298,114 @@ tmx_tile* alloc_tiles(int count) {
 }
 
 tmx_tileset* alloc_tileset(void) {
-	return (tmx_tileset*)node_alloc(sizeof(tmx_tileset));
+	tmx_tileset *res = (tmx_tileset*)node_alloc(sizeof(tmx_tileset));
+	if (res) {
+		res->is_embedded = 1;
+	}
+	return res;
+}
+
+tmx_tileset_list* alloc_tileset_list(void) {
+	return (tmx_tileset_list*)node_alloc(sizeof(tmx_tileset_list));
 }
 
 tmx_map* alloc_map(void) {
 	return (tmx_map*)node_alloc(sizeof(tmx_map));
+}
+
+/*
+	Node free
+*/
+
+void free_property(tmx_property *p) {
+	if (p) {
+		tmx_free_func(p->name);
+		if (p->type == PT_STRING || p->type == PT_FILE || p->type == PT_NONE) {
+			tmx_free_func(p->value.string);
+		}
+		tmx_free_func(p);
+	}
+}
+
+void free_props(tmx_properties *h) {
+	free_hashtable((void*)h, property_deallocator);
+}
+
+void free_obj(tmx_object *o) {
+	if (o) {
+		free_obj(o->next);
+		tmx_free_func(o->name);
+		if (o->points) tmx_free_func(*(o->points));
+		tmx_free_func(o->type);
+		tmx_free_func(o->points);
+		tmx_free_func(o);
+	}
+}
+
+void free_objgr(tmx_object_group *o) {
+	if (o) {
+		free_obj(o->head);
+		tmx_free_func(o);
+	}
+}
+
+void free_image(tmx_image *i) {
+	if (i) {
+		tmx_free_func(i->source);
+		if (tmx_img_free_func) {
+			tmx_img_free_func(i->resource_image);
+		}
+		tmx_free_func(i);
+	}
+}
+
+void free_layers(tmx_layer *l) {
+	if (l) {
+		free_layers(l->next);
+		tmx_free_func(l->name);
+		if (l->type == L_LAYER)
+			tmx_free_func(l->content.gids);
+		else if (l->type == L_OBJGR)
+			free_objgr(l->content.objgr);
+		else if (l->type == L_IMAGE) {
+			free_image(l->content.image);
+		}
+		free_props(l->properties);
+		tmx_free_func(l);
+	}
+}
+
+void free_tiles(tmx_tile *t, int tilecount) {
+	int i;
+	if (t) {
+		for (i=0; i<tilecount; i++) {
+			free_props(t[i].properties);
+			free_image(t[i].image);
+			free_obj(t[i].collision);
+			tmx_free_func(t[i].animation);
+		}
+	}
+}
+
+void free_ts(tmx_tileset *ts) {
+	if (ts) {
+		tmx_free_func(ts->name);
+		free_image(ts->image);
+		free_props(ts->properties);
+		free_tiles(ts->tiles, ts->tilecount);
+		tmx_free_func(ts->tiles);
+		tmx_free_func(ts);
+	}
+}
+
+void free_ts_list(tmx_tileset_list *tsl) {
+	if (tsl) {
+		free_ts_list(tsl->next);
+		if (tsl->tileset->is_embedded) {
+			free_ts(tsl->tileset);
+		}
+		tmx_free_func(tsl);
+	}
 }
 
 /*
@@ -349,7 +452,7 @@ int set_tiles_runtime_props(tmx_tileset *ts) {
 /* Creates the array at map->tiles */
 int mk_map_tile_array(tmx_map *map) {
 	unsigned int i;
-	tmx_tileset *ts, *max_ts;
+	tmx_tileset_list *ts, *max_ts;
 
 	if (!map) {
 		tmx_err(E_INVAL, "mk_map_tile_array: invalid argument: map is NULL");
@@ -364,17 +467,17 @@ int mk_map_tile_array(tmx_map *map) {
 	/* Counts total tile count */
 	ts = max_ts = map->ts_head;
 	while (ts != NULL) {
-		if (ts->firstgid > max_ts->firstgid) {
+		if (ts->tileset->firstgid > max_ts->tileset->firstgid) {
 			max_ts = ts;
 		}
 		ts = ts->next;
 	}
-	if (max_ts->image) {
-		map->tilecount = max_ts->firstgid + max_ts->tilecount;
+	if (max_ts->tileset->image) {
+		map->tilecount = max_ts->tileset->firstgid + max_ts->tileset->tilecount;
 	}
 	else {
 		/* Gets the last id, ts->tiles is sorted by id */
-		map->tilecount = max_ts->firstgid + max_ts->tiles[max_ts->tilecount - 1].id + 1;
+		map->tilecount = max_ts->tileset->firstgid + max_ts->tileset->tiles[max_ts->tileset->tilecount - 1].id + 1;
 	}
 
 	/* Allocates the GID indexed tile array */
@@ -388,8 +491,8 @@ int mk_map_tile_array(tmx_map *map) {
 	map->tiles[0] = NULL; /* GIDs start from 1 */
 	ts = map->ts_head;
 	while (ts != NULL) {
-		for (i=0; i<ts->tilecount; i++) {
-			map->tiles[ts->firstgid + ts->tiles[i].id] = &(ts->tiles[i]);
+		for (i=0; i<ts->tileset->tilecount; i++) {
+			map->tiles[ts->tileset->firstgid + ts->tileset->tiles[i].id] = &(ts->tileset->tiles[i]);
 		}
 		ts = ts->next;
 	}
@@ -607,12 +710,9 @@ void hashtable_foreach(void *hashtable, hashtable_foreach_functor functor, void 
 }
 
 void property_deallocator(void *val, const char *key UNUSED) {
-	if (val) {
-		tmx_property *p = (tmx_property*)val;
-		tmx_free_func(p->name);
-		if (p->type == PT_STRING || p->type == PT_FILE || p->type == PT_NONE) {
-			tmx_free_func(p->value.string);
-		}
-		tmx_free_func(p);
-	}
+	free_property((tmx_property*)val);
+}
+
+void tileset_deallocator(void *val, const char *key UNUSED) {
+	free_ts((tmx_tileset*)val);
 }
