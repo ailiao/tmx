@@ -540,6 +540,9 @@ size_t dirpath_len(const char *str) {
 
 /* ("C:\Maps\map.tmx", "tilesets\ts1.tsx") => "C:\Maps\tilesets\ts1.tsx" */
 char* mk_absolute_path(const char *base_path, const char *rel_path) {
+	if (base_path == NULL) {
+		return tmx_strdup(rel_path);
+	}
 	/* if base_path is a directory, it MUST have a trailing path separator */
 	size_t dp_len = dirpath_len(base_path);
 	size_t rp_len = strlen(rel_path);
@@ -603,7 +606,7 @@ void hashtable_foreach(void *hashtable, hashtable_foreach_functor functor, void 
 	xmlHashScan((xmlHashTablePtr)hashtable, (xmlHashScanner)functor, userdata);
 }
 
-void property_deallocator(void *val, const char *key) {
+void property_deallocator(void *val, const char *key UNUSED) {
 	if (val) {
 		tmx_property *p = (tmx_property*)val;
 		tmx_free_func(p->name);

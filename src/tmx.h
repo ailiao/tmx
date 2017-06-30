@@ -205,9 +205,27 @@ struct _tmx_map { /* <map> (Head of the data structure) */
 	Functions
 */
 
-/* Loads a map and return the head of the data structure
+/* Loads a map from file at `path` and returns the head of the data structure
    returns NULL if an error occurred and set tmx_errno */
 TMXEXPORT tmx_map *tmx_load(const char *path);
+
+/* Loads a map from file at `path` and returns the head of the data structure
+   returns NULL if an error occurred and set tmx_errno */
+TMXEXPORT tmx_map* tmx_load_buffer(const char *buffer, int len);
+
+/* Loads a map from a file descriptor and returns the head of the data structure
+   The file descriptor will not be closed
+   returns NULL if an error occurred and set tmx_errno */
+TMXEXPORT tmx_map* tmx_load_fd(int fd);
+
+/* allback used by tmx_load to delegate reading to client code
+   userdata(in): user data passed to tmx_load()
+   buffer(in): to store read bytes
+   len: how many bytes to read (length of buffer) */
+typedef int (*tmx_read_functor)(void *userdata, char *buffer, int len);
+/* Loads a map using the given read callback and returns the head of the data structure
+   returns NULL if an error occurred and set tmx_errno */
+TMXEXPORT tmx_map* tmx_load_callback(tmx_read_functor callback, void *userdata);
 
 /* Frees the map data structure */
 TMXEXPORT void tmx_map_free(tmx_map *map);

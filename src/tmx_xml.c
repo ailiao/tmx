@@ -33,20 +33,13 @@ static void error_handler(void *arg UNUSED, const char *msg, xmlParserSeverities
 	}
 }
 
-static xmlTextReaderPtr create_parser(const char *filename) {
-	xmlTextReaderPtr reader = NULL;
-	if ((reader = xmlReaderForFile(filename, NULL, 0))) {
+static int check_reader(xmlTextReaderPtr reader) {
+	xmlTextReaderSetErrorHandler(reader, error_handler, NULL);
 
-		xmlTextReaderSetErrorHandler(reader, error_handler, NULL);
-
-		if (xmlTextReaderRead(reader) != 1) {
-			xmlFreeTextReader(reader);
-			reader = NULL;
-		}
-	} else {
-		tmx_err(E_UNKN, "xml parser: unable to open %s", filename);
+	if (xmlTextReaderRead(reader) != 1) {
+		return 0;
 	}
-	return reader;
+	return 1;
 }
 
 static int parse_property(xmlTextReaderPtr reader, tmx_property *prop) {
@@ -730,7 +723,7 @@ static int parse_tileset(xmlTextReaderPtr reader, tmx_tileset **ts_headadr, cons
 	if ((value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"source"))) { /* source */
 		if (!(ab_path = mk_absolute_path(filename, value))) return 0;
 		tmx_free_func(value);
-		if (!(sub_reader = create_parser(ab_path))) return 0; /* opens */
+		if (!(sub_reader = xmlReaderForFile(ab_path, NULL, 0)) || !check_reader(reader)) return 0; /* opens */
 		ret = parse_tileset_sub(sub_reader, res, ab_path); /* and parses the tsx file */
 		xmlFreeTextReader(sub_reader);
 		tmx_free_func(ab_path);
@@ -860,15 +853,77 @@ cleanup:
 	return NULL;
 }
 
+static void setup_libxml_mem() {
+	xmlMemSetup((xmlFreeFunc)tmx_free_func, (xmlMallocFunc)tmx_malloc, (xmlReallocFunc)tmx_alloc_func, (xmlStrdupFunc)tmx_strdup);
+}
+
 tmx_map *parse_xml(const char *filename) {
 	xmlTextReaderPtr reader;
 	tmx_map *res = NULL;
 
-	xmlMemSetup((xmlFreeFunc)tmx_free_func, (xmlMallocFunc)tmx_malloc, (xmlReallocFunc)tmx_alloc_func, (xmlStrdupFunc)tmx_strdup);
+	setup_libxml_mem();
 
-	if ((reader = create_parser(filename))) {
-		res = parse_root_map(reader, filename);
+	if ((reader = xmlReaderForFile(filename, NULL, 0))) {
+		if (check_reader(reader)) {
+			res = parse_root_map(reader, filename);
+		}
 		xmlFreeTextReader(reader);
+	} else {
+		tmx_err(E_UNKN, "xml parser: unable to open %s", filename);
+	}
+
+	return res;
+}
+
+tmx_map* parse_xml_buffer(const char *buffer, int len) {
+	xmlTextReaderPtr reader;
+	tmx_map *res = NULL;
+
+	setup_libxml_mem();
+
+	if ((reader = xmlReaderForMemory(buffer, len, NULL, NULL, 0))) {
+		if (check_reader(reader)) {
+			res = parse_root_map(reader, NULL);
+		}
+		xmlFreeTextReader(reader);
+	} else {
+		tmx_err(E_UNKN, "xml parser: unable to create parser for buffer");
+	}
+
+	return res;
+}
+
+tmx_map* parse_xml_fd(int fd) {
+	xmlTextReaderPtr reader;
+	tmx_map *res = NULL;
+
+	setup_libxml_mem();
+
+	if ((reader = xmlReaderForFd(fd, NULL, NULL, 0))) {
+		if (check_reader(reader)) {
+			res = parse_root_map(reader, NULL);
+		}
+		xmlFreeTextReader(reader);
+	} else {
+		tmx_err(E_UNKN, "xml parser: unable create parser for file descriptor");
+	}
+
+	return res;
+}
+
+tmx_map* parse_xml_callback(tmx_read_functor callback, void *userdata) {
+	xmlTextReaderPtr reader;
+	tmx_map *res = NULL;
+
+	setup_libxml_mem();
+
+	if ((reader = xmlReaderForIO((xmlInputReadCallback)callback, NULL, userdata, NULL, NULL, 0))) {
+		if (check_reader(reader)) {
+			res = parse_root_map(reader, NULL);
+		}
+		xmlFreeTextReader(reader);
+	} else {
+		tmx_err(E_UNKN, "xml parser: unable to create parser for input callback");
 	}
 
 	return res;

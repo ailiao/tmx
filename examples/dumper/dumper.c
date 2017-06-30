@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <tmx.h>
 
 #define str_bool(b) (b==0? "false": "true")
@@ -281,18 +283,84 @@ void dbg_free(void *address) {
 	free(address);
 }
 
-int main(int argc, char *argv[]) {
-	tmx_map *m;
+/* for tmx_load_callback */
+int read_function(void *file, char *buffer, int len) {
+	int res;
+	res = fread(buffer, 1, len, file);
+	if (ferror(file)) {
+		perror("error");
+	}
+	return res;
+}
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s <map.tmx>\n", argv[0]);
+int main(int argc, char *argv[]) {
+	tmx_map *m = NULL;
+	int fd;
+	FILE *file;
+	long size;
+	char *buffer;
+
+	if (argc < 2 || argc > 3) {
+		fprintf(stderr, "usage: %s [--fd|--buffer|--callback] <map.tmx>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
 	tmx_alloc_func = dbg_alloc; /* alloc/free dbg */
 	tmx_free_func  = dbg_free;
 
-	m = tmx_load(argv[1]);
+	if (argc == 3) {
+		if (!strcmp("--fd", argv[1])) {
+			fd = open(argv[2], O_RDONLY);
+			if (fd == -1) {
+				perror("error");
+			}
+			else {
+				m = tmx_load_fd(fd);
+				close(fd);
+			}
+		}
+		else if (!strcmp("--buffer", argv[1])) {
+			file = fopen(argv[2], "r");
+			if (!file) {
+				perror("error");
+			}
+			else {
+				fseek(file, 0, SEEK_END);
+				size = ftell(file);
+				rewind(file);
+
+				buffer = dbg_alloc(NULL, size);
+				fread(buffer, 1, size, file);
+				if (ferror(file))
+				{
+					perror("error");
+				}
+				else {
+					m = tmx_load_buffer(buffer, size);
+				}
+
+				dbg_free(buffer);
+				fclose(file);
+			}
+		}
+		else if (!strcmp("--callback", argv[1])) {
+			file = fopen(argv[2], "r");
+			if (!file) {
+				perror("error");
+			}
+			else {
+				m = tmx_load_callback(read_function, file);
+				fclose(file);
+			}
+		}
+		else {
+			fprintf(stderr, "unknown load method: %s\nvalid methods are --fd, --buffer, --callback\n", argv[1]);
+		}
+	}
+	else {
+		m = tmx_load(argv[1]);
+	}
+
 	if (!m) tmx_perror("error");
 
 	dump_map(m);

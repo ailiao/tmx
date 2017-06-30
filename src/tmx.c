@@ -20,21 +20,49 @@ void  (*tmx_img_free_func) (void *address) = NULL;
 	Public functions
 */
 
-tmx_map* tmx_load(const char *path) {
-	tmx_map *map = NULL;
-
+static void set_alloc_functions() {
 	if (!tmx_alloc_func) tmx_alloc_func = realloc;
 	if (!tmx_free_func) tmx_free_func = free;
+}
 
-	map = parse_xml(path);
-
+static void map_post_parsing(tmx_map *map) {
 	if (map) {
 		if (!mk_map_tile_array(map)) {
 			tmx_map_free(map);
 			map = NULL;
 		}
 	}
+}
 
+tmx_map* tmx_load(const char *path) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml(path);
+	map_post_parsing(map);
+	return map;
+}
+
+tmx_map* tmx_load_buffer(const char *buffer, int len) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_buffer(buffer, len);
+	map_post_parsing(map);
+	return map;
+}
+
+tmx_map* tmx_load_fd(int fd) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_fd(fd);
+	map_post_parsing(map);
+	return map;
+}
+
+tmx_map* tmx_load_callback(tmx_read_functor callback, void *userdata) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_callback(callback, userdata);
+	map_post_parsing(map);
 	return map;
 }
 
@@ -133,7 +161,7 @@ tmx_tile* tmx_get_tile(tmx_map *map, unsigned int gid) {
 	return NULL;
 }
 
-TMXEXPORT tmx_property* tmx_get_property(tmx_properties *hash, const char *key) {
+tmx_property* tmx_get_property(tmx_properties *hash, const char *key) {
 	if (hash == NULL) {
 		return NULL;
 	}
@@ -145,7 +173,7 @@ struct property_foreach_data {
 	void *userdata;
 };
 
-static void property_foreach(void *val, void *userdata, const char *key) {
+static void property_foreach(void *val, void *userdata, const char *key UNUSED) {
 	struct property_foreach_data *holder = ((struct property_foreach_data*)userdata);
 	holder->callback((tmx_property*)val, holder->userdata);
 }
