@@ -20,20 +20,6 @@ void  (*tmx_img_free_func) (void *address) = NULL;
 	Public functions
 */
 
-static void set_alloc_functions() {
-	if (!tmx_alloc_func) tmx_alloc_func = realloc;
-	if (!tmx_free_func) tmx_free_func = free;
-}
-
-static void map_post_parsing(tmx_map **map) {
-	if (*map) {
-		if (!mk_map_tile_array(*map)) {
-			tmx_map_free(*map);
-			*map = NULL;
-		}
-	}
-}
-
 tmx_map* tmx_load(const char *path) {
 	tmx_map *map = NULL;
 	set_alloc_functions();

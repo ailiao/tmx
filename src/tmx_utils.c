@@ -412,6 +412,20 @@ void free_ts_list(tmx_tileset_list *tsl) {
 	Misc
 */
 
+void set_alloc_functions() {
+	if (!tmx_alloc_func) tmx_alloc_func = realloc;
+	if (!tmx_free_func) tmx_free_func = free;
+}
+
+void map_post_parsing(tmx_map **map) {
+	if (*map) {
+		if (!mk_map_tile_array(*map)) {
+			tmx_map_free(*map);
+			*map = NULL;
+		}
+	}
+}
+
 /* Sets tile->tileset and tile->ul_x,y */
 int set_tiles_runtime_props(tmx_tileset *ts) {
 	unsigned int i, j;

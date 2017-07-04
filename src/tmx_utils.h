@@ -59,6 +59,8 @@ void free_ts_list(tmx_tileset_list *tsl);
 	Misc
 */
 #define MAX(a,b) (a<b) ? b: a;
+void set_alloc_functions();
+void map_post_parsing(tmx_map **map);
 int set_tiles_runtime_props(tmx_tileset *ts);
 int mk_map_tile_array(tmx_map *map);
 enum tmx_map_orient parse_orient(const char *orient_str);

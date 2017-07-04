@@ -74,3 +74,35 @@ int tmx_load_tileset_callback(tmx_read_functor callback, void *userdata, const c
 
 	return 0;
 }
+
+tmx_map* tmx_tsmgr_load(tmx_tileset_manager *ts_mgr, const char *path) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml(path);
+	map_post_parsing(&map);
+	return map;
+}
+
+tmx_map* tmx_tsmgr_load_buffer(tmx_tileset_manager *ts_mgr, const char *buffer, int len) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_buffer(buffer, len);
+	map_post_parsing(&map);
+	return map;
+}
+
+tmx_map* tmx_tsmgr_load_fd(tmx_tileset_manager *ts_mgr, int fd) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_fd(fd);
+	map_post_parsing(&map);
+	return map;
+}
+
+tmx_map* tmx_tsmgr_load_callback(tmx_tileset_manager *ts_mgr, tmx_read_functor callback, void *userdata) {
+	tmx_map *map = NULL;
+	set_alloc_functions();
+	map = parse_xml_callback(callback, userdata);
+	map_post_parsing(&map);
+	return map;
+}

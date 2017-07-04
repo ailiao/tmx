@@ -18,6 +18,10 @@
 extern "C" {
 #endif
 
+/*
+	Tileset Manager functions
+*/
+
 /* Tileset Manager type (private hashtable) */
 typedef void tmx_tileset_manager;
 
@@ -49,6 +53,22 @@ TMXEXPORT int tmx_load_tileset_fd(int fd, const char *key, tmx_tileset_manager *
 /* Loads a tileset using the given read callback and stores it into given tileset manager
    Returns 1 on success */
 TMXEXPORT int tmx_load_tileset_callback(tmx_read_functor callback, void *userdata, const char *key, tmx_tileset_manager *ts_mgr);
+
+/*
+	Load map using a Tileset Manager
+*/
+
+/* Same as tmx_load (tmx.h) but with a Tileset Manager. */
+TMXEXPORT tmx_map* tmx_tsmgr_load(tmx_tileset_manager *ts_mgr, const char *path);
+
+/* Same as tmx_load_buffer (tmx.h) but with a Tileset Manager. */
+TMXEXPORT tmx_map* tmx_tsmgr_load_buffer(tmx_tileset_manager *ts_mgr, const char *buffer, int len);
+
+/* Same as tmx_load_fd (tmx.h) but with a Tileset Manager. */
+TMXEXPORT tmx_map* tmx_tsmgr_load_fd(tmx_tileset_manager *ts_mgr, int fd);
+
+/* Same as tmx_load_callback (tmx.h) but with a Tileset Manager. */
+TMXEXPORT tmx_map* tmx_tsmgr_load_callback(tmx_tileset_manager *ts_mgr, tmx_read_functor callback, void *userdata);
 
 #ifdef __cplusplus
 }
