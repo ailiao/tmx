@@ -25,11 +25,11 @@ static void set_alloc_functions() {
 	if (!tmx_free_func) tmx_free_func = free;
 }
 
-static void map_post_parsing(tmx_map *map) {
-	if (map) {
-		if (!mk_map_tile_array(map)) {
-			tmx_map_free(map);
-			map = NULL;
+static void map_post_parsing(tmx_map **map) {
+	if (*map) {
+		if (!mk_map_tile_array(*map)) {
+			tmx_map_free(*map);
+			*map = NULL;
 		}
 	}
 }
@@ -38,7 +38,7 @@ tmx_map* tmx_load(const char *path) {
 	tmx_map *map = NULL;
 	set_alloc_functions();
 	map = parse_xml(path);
-	map_post_parsing(map);
+	map_post_parsing(&map);
 	return map;
 }
 
@@ -46,7 +46,7 @@ tmx_map* tmx_load_buffer(const char *buffer, int len) {
 	tmx_map *map = NULL;
 	set_alloc_functions();
 	map = parse_xml_buffer(buffer, len);
-	map_post_parsing(map);
+	map_post_parsing(&map);
 	return map;
 }
 
@@ -54,7 +54,7 @@ tmx_map* tmx_load_fd(int fd) {
 	tmx_map *map = NULL;
 	set_alloc_functions();
 	map = parse_xml_fd(fd);
-	map_post_parsing(map);
+	map_post_parsing(&map);
 	return map;
 }
 
@@ -62,7 +62,7 @@ tmx_map* tmx_load_callback(tmx_read_functor callback, void *userdata) {
 	tmx_map *map = NULL;
 	set_alloc_functions();
 	map = parse_xml_callback(callback, userdata);
-	map_post_parsing(map);
+	map_post_parsing(&map);
 	return map;
 }
 
